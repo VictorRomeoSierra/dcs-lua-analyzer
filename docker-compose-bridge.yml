@@ -14,8 +14,8 @@ services:
       # Database connection - this points to the PostgreSQL database on the host
       - DATABASE_URL=postgresql://dcs_user:secure_password@host.docker.internal:5433/vectordb
       - PORT=8000
-      # Ollama connection - using localhost for direct connection to host machine
-      - OLLAMA_BASE_URL=http://localhost:11434
+      # Ollama connection - host.docker.internal refers to the host machine from inside the container
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - OLLAMA_EMBEDDING_MODEL=nomic-embed-text
       - OLLAMA_LLM_MODEL=codegemma
       - USE_OLLAMA=true

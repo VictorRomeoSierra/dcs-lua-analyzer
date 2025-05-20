@@ -43,26 +43,11 @@ if [[ -n "$OLLAMA_BASE_URL" ]]; then\n\
   OLLAMA_HOST=$(echo $OLLAMA_BASE_URL | sed -n "s/http:\\/\\/\\([^:]*\\).*/\\1/p")\n\
   OLLAMA_PORT=$(echo $OLLAMA_BASE_URL | sed -n "s/.*:\\([0-9]*\\).*/\\1/p")\n\
   echo "Testing connection to Ollama at $OLLAMA_HOST:$OLLAMA_PORT"\n\
-  \n\
-  # Check how to test Ollama connection based on host configuration\n\
   if [[ "$OLLAMA_HOST" == "host.docker.internal" ]]; then\n\
     echo "Ollama is configured to use host.docker.internal"\n\
     ping -c 1 host.docker.internal || echo "WARNING: Cannot ping host.docker.internal"\n\
-  elif [[ "$OLLAMA_HOST" == "localhost" ]]; then\n\
-    echo "Ollama is configured to use localhost - this may not work in Docker containers"\n\
-    echo "Attempting to query Ollama API anyway..."\n\
   fi\n\
-  \n\
-  # Test Ollama connectivity\n\
-  OLLAMA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $OLLAMA_BASE_URL/api/tags 2>/dev/null || echo "failed")\n\
-  if [[ "$OLLAMA_STATUS" == "failed" || "$OLLAMA_STATUS" != "200" ]]; then\n\
-    echo "WARNING: Cannot connect to Ollama API (status: $OLLAMA_STATUS)"\n\
-    echo "NOTE: If using localhost in Docker, this usually doesn't work. Try these alternatives:"\n\
-    echo "  1. In docker-compose: OLLAMA_BASE_URL=http://host.docker.internal:11434"\n\
-    echo "  2. Use the host's actual IP address instead of localhost"\n\
-  else\n\
-    echo "Successfully connected to Ollama API (status: $OLLAMA_STATUS)"\n\
-  fi\n\
+  curl -s -o /dev/null -w "%{http_code}" $OLLAMA_BASE_URL/api/tags 2>/dev/null || echo "WARNING: Cannot connect to Ollama API"\n\
 fi\n\
 \n\
 echo "Environment variables:"\n\
