@@ -9,12 +9,15 @@ This guide explains how to integrate the DCS Lua Analyzer API server with Open W
 First, make sure both Open WebUI and DCS Lua Analyzer API server are running:
 
 ```bash
-# Start the DCS Lua Analyzer API server
+# For standard Docker networking with shared network
 cd /path/to/dcs-lua-analyzer
-docker-compose up -d
+docker-compose -f docker-compose-api-only.yml up -d
+
+# OR for bridge network mode
+docker-compose -f docker-compose-bridge.yml up -d
 
 # Check that the services are running
-docker-compose ps
+docker ps | grep dcs-lua-analyzer
 ```
 
 The API server will be available at `http://localhost:8000`.
@@ -35,8 +38,22 @@ The API server will be available at `http://localhost:8000`.
      Always focus on providing practical, working code examples when possible.
      ```
    - Enable the "API" option
-   - Set API Endpoint URL: `http://api-server:8000/rag_prompt` (if using Docker network) or `http://localhost:8000/rag_prompt` (if accessing externally)
+   - Set API Endpoint URL: 
+     * With shared network: `http://api-server:8000/rag_prompt` or `http://dcs-lua-analyzer-api:8000/rag_prompt`
+     * With bridge network: `http://localhost:8000/rag_prompt` or `http://<host-ip>:8000/rag_prompt`
    - Set Model: Any model that works well with code (e.g., codegemma, llama3, etc.)
+
+#### Bridge Network Configuration
+
+If using bridge network mode:
+
+1. The API server will be accessible at `http://localhost:8000` from the host
+2. For containers to communicate with each other in bridge mode:
+   - Use the API server's container IP (find with `docker inspect dcs-lua-analyzer-api`)
+   - Or use the exposed port on the host: `http://host.docker.internal:8000`
+3. In your Open WebUI assistant configuration, use:
+   - `http://host.docker.internal:8000/rag_prompt` (if Open WebUI has host.docker.internal enabled)
+   - `http://<host-ip>:8000/rag_prompt` (using your actual host machine's IP)
 
 #### Option 2: Using Custom API Integration
 
@@ -59,6 +76,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configure this based on your network setup
+# Bridge mode: use host.docker.internal or host IP
+# Shared network: use container name
+API_SERVER_URL = "http://localhost:8000"  # Adjust as needed
+OPEN_WEBUI_URL = "http://localhost:3000"  # Adjust as needed
+
 @app.post("/api/chat")
 async def chat_proxy(request: Request):
     # Get the original request data
@@ -80,7 +103,7 @@ async def chat_proxy(request: Request):
     
     # Send request to DCS Lua Analyzer API
     api_response = requests.post(
-        "http://api-server:8000/rag_prompt",
+        f"{API_SERVER_URL}/rag_prompt",
         json={"query": user_message, "limit": 5}
     )
     
@@ -99,7 +122,7 @@ async def chat_proxy(request: Request):
     
     # Forward to Open WebUI's original endpoint
     webui_response = requests.post(
-        "http://open-webui:3000/api/chat/completions",
+        f"{OPEN_WEBUI_URL}/api/chat/completions",
         headers=request.headers,
         json=new_data
     )
@@ -135,11 +158,24 @@ To test if the integration is working properly:
 
 If you encounter issues with the integration:
 
-1. Check that both services are running: `docker-compose ps`
+1. Check that the API server is running: `docker ps | grep dcs-lua-analyzer`
 2. Verify the API server is accessible: `curl http://localhost:8000/health`
-3. Check the API server logs: `docker-compose logs api-server`
-4. Ensure the network configuration is correct and the containers can communicate
-5. Verify that your database has been populated with DCS Lua code snippets
+3. Check the API server logs: `docker logs dcs-lua-analyzer-api`
+4. Test network connectivity:
+   - Bridge mode: Test with `curl` from host and from inside containers
+   - Shared network: Test container-to-container communication
+
+### Network-specific troubleshooting:
+
+#### Bridge Network
+- Find container IPs: `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dcs-lua-analyzer-api`
+- Test connectivity: `docker exec open-webui-container curl http://<api-container-ip>:8000/health`
+- If using host.docker.internal: Ensure it's supported in your Docker environment
+
+#### Shared Network
+- Verify network exists: `docker network ls`
+- Check containers in network: `docker network inspect open-webui_default`
+- Ensure container names resolve: `docker exec open-webui-container ping dcs-lua-analyzer-api`
 
 ## Advanced: Direct API Usage
 

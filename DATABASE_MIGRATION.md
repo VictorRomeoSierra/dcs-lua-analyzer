@@ -6,6 +6,8 @@ This guide covers how to use your existing PostgreSQL database with the Docker s
 
 This is the simplest approach if your database is already running and accessible.
 
+### Using Docker network with Open WebUI
+
 1. Use the `docker-compose-api-only.yml` file which only runs the API server:
 
 ```bash
@@ -15,6 +17,25 @@ docker-compose -f docker-compose-api-only.yml up -d
 2. Ensure the `DATABASE_URL` in this file points to your existing database.
    - The default configuration uses `host.docker.internal:5433` which allows Docker containers to access services running on your host machine
    - Adjust the connection details (username, password, host, port) as needed
+
+### Using Bridge network mode
+
+If your existing containers (including Open WebUI) use the default bridge network:
+
+1. Use the `docker-compose-bridge.yml` file:
+
+```bash
+docker-compose -f docker-compose-bridge.yml up -d
+```
+
+2. Communication between containers:
+   - In bridge mode, containers communicate using their internal IPs or container names with Docker DNS
+   - To access host services (like your database), the file uses `host.docker.internal`
+   - For Linux hosts, the `extra_hosts` configuration enables this special DNS name
+
+3. To connect to Open WebUI in bridge mode:
+   - Open WebUI will access the API server via the exposed port (8000)
+   - Configure Open WebUI to use `http://localhost:8000` or `http://<your-host-ip>:8000` 
 
 ## Option 2: Export and import your database
 
@@ -100,4 +121,12 @@ curl -X POST http://localhost:8000/search -H "Content-Type: application/json" -d
 
 - **Permission issues**: Make sure the database user has appropriate permissions on all tables and sequences.
 
-- **Network issues**: If using `host.docker.internal`, ensure your Docker setup supports this feature (it works on Docker Desktop for Mac, Windows, and recent Linux versions with the host-gateway extra_host).
+- **Network issues**: 
+  - When using bridge mode, you may need to use the host's actual IP address instead of `host.docker.internal`
+  - On Mac and Windows, `host.docker.internal` should work by default
+  - On Linux, the `extra_hosts` configuration is needed for `host.docker.internal` to work
+  
+- **Finding container IPs**: If you need to find the IP of a container in bridge mode:
+  ```bash
+  docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' container_name
+  ```
