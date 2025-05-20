@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  middleware:
+    build:
+      context: .
+      dockerfile: Dockerfile.middleware
+    container_name: dcs-lua-middleware
+    restart: unless-stopped
+    network_mode: bridge  # Use bridge network mode
+    ports:
+      - "8080:8080"  # Expose middleware on port 8080
+    environment:
+      - DCS_API_URL=http://host.docker.internal:8000  # DCS Lua Analyzer API
+      - OLLAMA_API_URL=http://host.docker.internal:11434  # Ollama API
+      - MIDDLEWARE_PORT=8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Makes host.docker.internal work on Linux
