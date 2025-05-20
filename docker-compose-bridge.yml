@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dcs-lua-analyzer-api
+    restart: unless-stopped
+    network_mode: bridge  # Use bridge network mode
+    ports:
+      - "8000:8000"
+    environment:
+      # Update this to point to your existing database
+      # When using bridge mode, you may need to use the host's actual IP address
+      # or use the special Docker DNS name host.docker.internal
+      - DATABASE_URL=postgresql://dcs_user:secure_password@host.docker.internal:5433/vectordb
+      - PORT=8000
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+      - OLLAMA_LLM_MODEL=codegemma
+      - USE_OLLAMA=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Makes host.docker.internal work on Linux
