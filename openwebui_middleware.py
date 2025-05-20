@@ -25,9 +25,9 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-# Configuration
-DCS_API_URL = os.getenv("DCS_API_URL", "http://localhost:8000")
-OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
+# Configuration - using host.docker.internal by default for Docker environments
+DCS_API_URL = os.getenv("DCS_API_URL", "http://host.docker.internal:8000")
+OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://host.docker.internal:11434")
 MIDDLEWARE_PORT = int(os.getenv("MIDDLEWARE_PORT", "8080"))
 
 # Create FastAPI app
@@ -86,6 +86,7 @@ async def chat_completions_proxy(request: Request):
             
             try:
                 # Get code context from DCS Lua Analyzer API
+                logger.info(f"Requesting context from DCS API at {DCS_API_URL}")
                 rag_response = requests.post(
                     f"{DCS_API_URL}/rag_prompt",
                     json={"query": user_query, "limit": 5},
@@ -108,11 +109,12 @@ async def chat_completions_proxy(request: Request):
                     data["messages"] = new_messages
                     logger.info("Successfully enhanced query with DCS code context")
                 else:
-                    logger.warning(f"Failed to get RAG context: {rag_response.status_code}")
+                    logger.warning(f"Failed to get RAG context: {rag_response.status_code}, {rag_response.text}")
             except Exception as e:
                 logger.error(f"Error enhancing query: {e}")
         
         # Forward the request to Ollama
+        logger.info(f"Forwarding request to Ollama at {OLLAMA_API_URL}")
         ollama_response = requests.post(
             f"{OLLAMA_API_URL}/api/chat/completions",
             headers={"Content-Type": "application/json"},
@@ -137,16 +139,20 @@ async def health_check():
     ollama_healthy = False
     
     try:
+        logger.info(f"Testing connection to DCS API at {DCS_API_URL}")
         dcs_resp = requests.get(f"{DCS_API_URL}/health", timeout=5)
         dcs_api_healthy = dcs_resp.status_code == 200
-    except:
-        pass
+        logger.info(f"DCS API connection: {'OK' if dcs_api_healthy else 'FAILED'}")
+    except Exception as e:
+        logger.error(f"Error connecting to DCS API: {e}")
     
     try:
+        logger.info(f"Testing connection to Ollama at {OLLAMA_API_URL}")
         ollama_resp = requests.get(f"{OLLAMA_API_URL}/api/tags", timeout=5)
         ollama_healthy = ollama_resp.status_code == 200
-    except:
-        pass
+        logger.info(f"Ollama connection: {'OK' if ollama_healthy else 'FAILED'}")
+    except Exception as e:
+        logger.error(f"Error connecting to Ollama: {e}")
     
     return {
         "status": "healthy" if dcs_api_healthy and ollama_healthy else "unhealthy",
