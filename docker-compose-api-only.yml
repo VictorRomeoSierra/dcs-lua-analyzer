@@ -13,7 +13,7 @@ services:
       # Update this to point to your existing database
       - DATABASE_URL=postgresql://dcs_user:secure_password@host.docker.internal:5433/vectordb
       - PORT=8000
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_BASE_URL=http://localhost:11434
       - OLLAMA_EMBEDDING_MODEL=nomic-embed-text
       - OLLAMA_LLM_MODEL=codegemma
       - USE_OLLAMA=true
