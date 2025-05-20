@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dcs-lua-analyzer-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://dcs_user:secure_password@db:5432/vectordb
+      - PORT=8000
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+      - OLLAMA_LLM_MODEL=codegemma
+      - USE_OLLAMA=true
+    networks:
+      - dcs-network
+      - open-webui-network  # Shared network with Open WebUI
+
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: dcs-lua-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=vectordb
+      - POSTGRES_USER=dcs_user
+      - POSTGRES_PASSWORD=secure_password
+    volumes:
+      - dcs-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5433:5432"
+    networks:
+      - dcs-network
+
+networks:
+  dcs-network:
+    driver: bridge
+  open-webui-network:
+    external: true  # Connect to existing Open WebUI network
+    name: open-webui_default  # Adjust this to match your Open WebUI network name
+
+volumes:
+  dcs-db-data:

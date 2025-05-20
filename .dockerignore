@@ -1,0 +1,36 @@
+# Ignore version control
+.git
+.gitignore
+
+# Ignore Python byte-compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Ignore environment directories
+venv/
+env/
+.env
+
+# Ignore Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Ignore development files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore logs and databases
+*.log
+*.sqlite3
+*.db
+
+# Ignore other unnecessary files
+README.md
+LICENSE
+*.md
