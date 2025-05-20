@@ -13,3 +13,6 @@ flask-restful>=0.3.10
 flask-cors>=4.0.0
 waitress>=2.1.2
 gunicorn>=20.1.0
+fastapi>=0.108.0
+uvicorn>=0.25.0
+pydantic>=2.5.0
